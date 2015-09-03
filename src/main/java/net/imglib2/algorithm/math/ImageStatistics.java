@@ -85,6 +85,36 @@ public class ImageStatistics {
 
 		return sum.getSum() / numPixels;
 	}
+	
+	/**
+	 * Calculates the variance of an image with respect to a mask and
+	 * a mean value.
+	 *
+	 * @param img The image to calculate the mean of
+	 * @param mask The mask to respect
+	 * @param mean The mean of the image (see {@link #getImageMean})
+	 * @return The variance of the image passed
+	 */
+	final public static <T extends RealType<T>> double getImageVariance(
+			final RandomAccessibleInterval<T> img,
+			final RandomAccessibleInterval<BitType> mask,
+			final double imgMean )
+	{
+		final RealSum sum = new RealSum();
+		long numPixels = 0;
+		// create cursor to walk an image with respect to a mask
+		final TwinCursor<T> cursor = new TwinCursor<T>(
+				img.randomAccess(),
+				img.randomAccess(),
+				Views.iterable(mask).localizingCursor());
+		while (cursor.hasNext()) {
+			double val = cursor.getFirst().getRealDouble();
+			sum.add( Math.pow(val - imgMean, 2) );
+			++numPixels;
+		}
+
+		return sum.getSum() / (numPixels-1);
+	}
 
 	/**
 	 * Calculates the mean of an image.

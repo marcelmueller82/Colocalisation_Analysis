@@ -11,6 +11,8 @@ import algorithms.MandersColocalization;
 import algorithms.MissingPreconditionException;
 import algorithms.PearsonsCorrelation;
 import algorithms.SpearmanRankCorrelation;
+import algorithms.GammaNormColocalization;
+
 import fiji.Debug;
 import gadgets.DataContainer;
 import ij.IJ;
@@ -158,6 +160,7 @@ public class Coloc_2<T extends RealType< T > & NativeType< T >> implements PlugI
 	protected KendallTauRankCorrelation<T> kendallTau;
 	protected Histogram2D<T> histogram2D;
 	protected CostesSignificanceTest<T> costesSignificance;
+	protected GammaNormColocalization<T> gicaAnalysis; 
 	// indicates if images should be printed in result
 	protected boolean displayImages;
 
@@ -237,6 +240,7 @@ public class Coloc_2<T extends RealType< T > & NativeType< T >> implements PlugI
 		int psf = (int) Prefs.get(PREF_KEY+"psf", 3);
 		int nrCostesRandomisations = (int) Prefs.get(PREF_KEY+"nrCostesRandomisations", 10);
 		indexRegr = (int) Prefs.get(PREF_KEY+"regressionImplementation", 0);
+		boolean useGICA = Prefs.get(PREF_KEY+"useGICA", true);
 
 		/* make sure the default indices are no bigger
 		 * than the amount of images we have
@@ -270,6 +274,7 @@ public class Coloc_2<T extends RealType< T > & NativeType< T >> implements PlugI
 		final Checkbox costesCb = (Checkbox) gd.getCheckboxes().lastElement();
 		gd.addNumericField("PSF", psf, 1);
 		gd.addNumericField("Costes_randomisations", nrCostesRandomisations, 0);
+		gd.addCheckbox("GICA", useGICA);
 
 		// disable shuffle checkbox if costes checkbox is set to "off"
 		shuffleCb.setEnabled(useCostes);
@@ -364,6 +369,7 @@ public class Coloc_2<T extends RealType< T > & NativeType< T >> implements PlugI
 		useCostes = gd.getNextBoolean();
 		psf = (int) gd.getNextNumber();
 		nrCostesRandomisations = (int) gd.getNextNumber();
+		useGICA = gd.getNextBoolean();
 
 		// save user preferences
 		Prefs.set(PREF_KEY+"regressionImplementation", indexRegr);
@@ -380,6 +386,7 @@ public class Coloc_2<T extends RealType< T > & NativeType< T >> implements PlugI
 		Prefs.set(PREF_KEY+"useCostes", useCostes);
 		Prefs.set(PREF_KEY+"psf", psf);
 		Prefs.set(PREF_KEY+"nrCostesRandomisations", nrCostesRandomisations);
+		Prefs.set(PREF_KEY+"useGICA", useGICA);
 
 		// Parse algorithm options
 		pearsonsCorrelation = new PearsonsCorrelation<T>(PearsonsCorrelation.Implementation.Fast);
@@ -402,7 +409,8 @@ public class Coloc_2<T extends RealType< T > & NativeType< T >> implements PlugI
 			costesSignificance = new CostesSignificanceTest<T>(pearsonsCorrelation,
 					psf, nrCostesRandomisations, displayShuffledCostes);
 		}
-
+		if (useGICA)
+			gicaAnalysis = new GammaNormColocalization(); 
 		return true;
 	}
 
@@ -464,6 +472,7 @@ public class Coloc_2<T extends RealType< T > & NativeType< T >> implements PlugI
 		addIfValid(kendallTau, userSelectedJobs);
 		addIfValid(histogram2D, userSelectedJobs);
 		addIfValid(costesSignificance, userSelectedJobs);
+		addIfValid(gicaAnalysis, userSelectedJobs);
 
 		// execute all algorithms
 		int count = 0;
